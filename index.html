@@ -609,8 +609,17 @@
     if(sp){ keys.forEach(function(k){ var v=sp.get(k); if(v) q[k]=v; }); }
     return q;
   })();
-  function trackQS(){ var p=[]; for(var k in TRACK){ p.push(encodeURIComponent(k)+"="+encodeURIComponent(TRACK[k])); } return p.join("&"); }
-  function withTrack(url){ var qs=trackQS(); if(!qs) return url; return url + (url.indexOf("?")>-1?"&":"?") + qs; }
+  function lpSlug(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60); }
+  function trackQS(veic){
+    var p=["utm_source=lp","utm_medium=landing","utm_campaign=lp-ultra"];
+    var vt=lpSlug(veic); if(vt) p.push("utm_term="+encodeURIComponent(vt));
+    if(TRACK.fbclid) p.push("fbclid="+encodeURIComponent(TRACK.fbclid));
+    if(TRACK.gclid) p.push("gclid="+encodeURIComponent(TRACK.gclid));
+    var ref=[]; ["utm_source","utm_medium","utm_campaign","utm_content","utm_term"].forEach(function(k){ if(TRACK[k]) ref.push(k.replace("utm_","")+":"+TRACK[k]); });
+    if(ref.length) p.push("lp_ref="+encodeURIComponent(ref.join("|")));
+    return p.join("&");
+  }
+  function withTrack(url, veic){ var qs=trackQS(veic); if(!qs) return url; return url + (url.indexOf("?")>-1?"&":"?") + qs; }
   function trackHuman(){ var s=[]; for(var k in TRACK){ if(k.indexOf("utm_")===0) s.push(k.replace("utm_","")+"="+TRACK[k]); } return s.join(" · "); }
 
   /* ---- Meta Pixel ---- */
@@ -696,7 +705,7 @@
       if(!current){ root.classList.remove("pulse"); void root.offsetWidth; root.classList.add("pulse"); focusNext(); track("CTA_SemVeiculo",true,{}); return; }
       track("Lead",false,{content_category:"site", content_name: current.name});
       track("VerKit_Site",true,{ tipo:current.tipo, marca:current.marca, modelo:current.modelo });
-      window.open(withTrack(current.url), "_blank", "noopener");
+      window.open(withTrack(current.url, current.name), "_blank", "noopener");
     }
     go.addEventListener("click", goToSite);
     tipo.addEventListener("change", onTipo);
@@ -747,7 +756,7 @@
   function ctaGo(origem){
     track("CTA_Clique",true,{origem:origem||""});
     var c=chosenVehicle();
-    if(c){ track("Lead",false,{content_category:"site",content_name:c.name}); track("VerKit_Site",true,{tipo:c.tipo,marca:c.marca,modelo:c.modelo,origem:origem||""}); window.open(withTrack(c.url),"_blank","noopener"); return; }
+    if(c){ track("Lead",false,{content_category:"site",content_name:c.name}); track("VerKit_Site",true,{tipo:c.tipo,marca:c.marca,modelo:c.modelo,origem:origem||""}); window.open(withTrack(c.url, c.name),"_blank","noopener"); return; }
     var el=document.getElementById("selector-hero");
     if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); setTimeout(function(){ selectors[0]&&selectors[0].focusNext(); },450); }
   }
